@@ -8,7 +8,6 @@ export default function ThawPage() {
   const [pending, setPending] = useState<ThawEvent[]>([])
   const [lots, setLots] = useState<Lot[]>([])
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ lotId: '', weightKg: '' })
   const [submitting, setSubmitting] = useState(false)
   const [totalWeightKg, setTotalWeightKg] = useState('')
   const [preview, setPreview] = useState<{ lot: string; weightKg: number }[]>([])
