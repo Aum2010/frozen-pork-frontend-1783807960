@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react'
 import { tanksApi } from '../api/tanks'
 import type { Tank } from '../types'
-import { TankStatusBadge } from '../components/StatusBadge'
 import toast from 'react-hot-toast'
 import { ledgerApi } from '../api/ledger'
 
 export default function WithdrawPage() {
   const [tanks, setTanks] = useState<Tank[]>([])
-  const [fifo, setFifo] = useState<Tank | null>(null)
+  const [fifo, _] = useState<Tank | null>(null)
   const [loading, setLoading] = useState(true)
   // const [form, setForm] = useState({ tankId: '', productionOrder: '', weightKg: '' })
   const [form, setForm] = useState({ productionOrder: '', weightKg: '' })
