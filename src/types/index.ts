@@ -21,19 +21,20 @@ export interface Lot {
   batchId: string
   supplier: string
   weightKg: number
-  remainingKg: number  
+  remainingKg: number
   zone: string | null
   status: LotStatus
   receivedAt: string
   createdAt: string
-  thawEvents?: ThawEvent[] 
+  thawEvents?: ThawEvent[]
+  expiryDate: string | null
 }
 
 export interface ThawEvent {
   id: string
   lotId: string
   weightKg: number
-  remainingKg: number 
+  remainingKg: number
   startedAt: string
   readyAt: string
   status: ThawStatus
@@ -55,11 +56,13 @@ export interface Tank {
 export interface TankEntry {
   id: string
   tankId: string
-  lotId: string
+  thawEventId: string
   weightKg: number
   filledAt: string
   emptyAt: string | null
-  lot?: Lot
+  thawEvent?: {
+    lot?: Lot
+  }
   tank?: Tank
 }
 
@@ -92,6 +95,13 @@ export interface AdvisoryStatus {
   }
   tankReady: {
     readyCount: number
+    message: string
+  }
+  expiry?: {
+    expiredCount: number
+    warningCount: number
+    expired: Lot[]
+    warning: Lot[]
     message: string
   }
 }

@@ -20,7 +20,7 @@ export default function DashboardPage() {
         ])
         setAdvisory(adv)
         setTanks(tkns)
-      } catch (e){
+      } catch (e) {
         console.error('load error:', e)
         toast.error('โหลดข้อมูลไม่สำเร็จ')
       } finally {
@@ -62,6 +62,17 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {advisory?.expiry?.expiredCount > 0 && (
+        <div className="bg-red-50 border border-red-300 rounded-lg p-3 text-sm text-red-700">
+          ❌ มีหมูหมดอายุแล้ว {advisory.expiry.expiredCount} lot — ควรนำออกทันที
+        </div>
+      )}
+      {advisory?.expiry?.warningCount > 0 && (
+        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 text-sm text-yellow-700">
+          ⚠️ หมูใกล้หมดอายุ {advisory.expiry.warningCount} lot (ภายใน 7 วัน)
+        </div>
+      )}
+
       {/* Tank Grid */}
       <div>
         <h2 className="text-base font-semibold text-gray-700 mb-3">🪣 สถานะถังน้ำแข็ง</h2>
@@ -88,14 +99,42 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
 function TankCard({ tank }: { tank: Tank }) {
   const pct = tank.capacityKg > 0 ? (tank.currentWeightKg / tank.capacityKg) * 100 : 0
   const borderColor = tank.isFifoNext ? 'border-orange-400' : 'border-gray-200'
+  const activeEntry = tank.tankEntries?.[0]
+  const lot = activeEntry?.thawEvent?.lot
+  const filledAt = activeEntry?.filledAt
 
   return (
     <div className={`bg-white rounded-lg border-2 ${borderColor} p-3`}>
       <div className="flex items-center justify-between mb-2">
         <span className="font-medium text-sm text-gray-700">ถัง {tank.tankNumber}</span>
-        {tank.isFifoNext && <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">FIFO</span>}
+        {tank.isFifoNext && (
+          <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">FIFO</span>
+        )}
       </div>
       <TankStatusBadge status={tank.status} />
+
+      {lot && (
+        <div className="mt-1.5 space-y-0.5">
+          <p className="text-xs font-medium text-gray-700 truncate">{lot.lotNumber}</p>
+          {filledAt && (
+            <p className="text-xs text-gray-400">
+              เข้าถัง: {new Date(filledAt).toLocaleString('th-TH')}
+            </p>
+          )}
+        </div>
+      )}
+
+      {lot?.expiryDate && (
+        <p className={`text-xs mt-0.5 ${new Date(lot.expiryDate) < new Date()
+            ? 'text-red-500 font-medium'
+            : new Date(lot.expiryDate) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+              ? 'text-yellow-500'
+              : 'text-gray-400'
+          }`}>
+          หมดอายุ: {new Date(lot.expiryDate).toLocaleDateString('th-TH')}
+        </p>
+      )}
+
       <div className="mt-2">
         <div className="w-full bg-gray-100 rounded-full h-1.5">
           <div
@@ -103,7 +142,9 @@ function TankCard({ tank }: { tank: Tank }) {
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="text-xs text-gray-500 mt-1">{tank.currentWeightKg}/{tank.capacityKg} กก.</p>
+        <p className="text-xs text-gray-500 mt-1">
+          {tank.currentWeightKg}/{tank.capacityKg} กก.
+        </p>
       </div>
     </div>
   )

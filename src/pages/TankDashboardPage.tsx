@@ -5,6 +5,69 @@ import type { Tank, ThawEvent } from '../types'
 import { TankStatusBadge } from '../components/StatusBadge'
 import toast from 'react-hot-toast'
 
+function TankCard({ tank, onFill, hasWaiting }: {
+  tank: Tank
+  onFill: () => void
+  hasWaiting: boolean
+}) {
+  const pct = (tank.currentWeightKg / tank.capacityKg) * 100
+  const activeEntry = tank.tankEntries?.[0]
+  const lot = activeEntry?.thawEvent?.lot
+  const filledAt = activeEntry?.filledAt
+
+  return (
+    <div className={`bg-white rounded-xl border-2 p-4 ${tank.isFifoNext ? 'border-orange-400' : 'border-gray-200'}`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-bold text-gray-800">ถัง {tank.tankNumber}</span>
+        {tank.isFifoNext && (
+          <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-medium">
+            FIFO
+          </span>
+        )}
+      </div>
+
+      <TankStatusBadge status={tank.status} />
+
+      {/* Lot Number + วันที่ */}
+      {lot && (
+        <div className="mt-2 space-y-0.5">
+          <p className="text-xs font-medium text-gray-700">{lot.lotNumber}</p>
+          <p className="text-xs text-gray-400">
+            {lot.batchId}
+          </p>
+          {filledAt && (
+            <p className="text-xs text-gray-400">
+              เข้าถัง: {new Date(filledAt).toLocaleString('th-TH')}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Progress bar */}
+      <div className="mt-2">
+        <div className="w-full bg-gray-100 rounded-full h-2">
+          <div
+            className="bg-blue-500 h-2 rounded-full transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          {tank.currentWeightKg}/{tank.capacityKg} กก.
+        </p>
+      </div>
+
+      {tank.status === 'EMPTY' && hasWaiting && (
+        <button
+          onClick={onFill}
+          className="mt-3 w-full text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 py-1.5 rounded-lg"
+        >
+          + ใส่หมู
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function TankDashboardPage() {
   const [tanks, setTanks] = useState<Tank[]>([])
   const [waitingThaws, setWaitingThaws] = useState<ThawEvent[]>([])
@@ -64,32 +127,14 @@ export default function TankDashboardPage() {
 
       {/* Tank Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {tanks.map((tank) => {
-          const pct = (tank.currentWeightKg / tank.capacityKg) * 100
-          return (
-            <div key={tank.id} className={`bg-white rounded-xl border-2 p-4 ${tank.isFifoNext ? 'border-orange-400' : 'border-gray-200'}`}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-bold text-gray-800">ถัง {tank.tankNumber}</span>
-                {tank.isFifoNext && <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-medium">FIFO</span>}
-              </div>
-              <TankStatusBadge status={tank.status} />
-              <div className="mt-3">
-                <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">{tank.currentWeightKg}/{tank.capacityKg} กก.</p>
-              </div>
-              {tank.status === 'EMPTY' && waitingThaws.length > 0 && (
-                <button
-                  onClick={() => setFillForm({ tankId: tank.id, thawEventId: '', weightKg: '' })}
-                  className="mt-3 w-full text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 py-1.5 rounded-lg transition-colors"
-                >
-                  + ใส่หมู
-                </button>
-              )}
-            </div>
-          )
-        })}
+        {tanks.map((tank) => (
+          <TankCard
+            key={tank.id}
+            tank={tank}
+            hasWaiting={waitingThaws.length > 0}
+            onFill={() => setFillForm({ tankId: tank.id, thawEventId: '', weightKg: '' })}
+          />
+        ))}
       </div>
 
       {/* Fill Modal */}
