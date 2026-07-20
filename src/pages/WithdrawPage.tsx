@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { tanksApi } from '../api/tanks'
 import type { Tank } from '../types'
-import { TankStatusBadge } from '../components/StatusBadge'
 import toast from 'react-hot-toast'
 import { ledgerApi } from '../api/ledger'
 
@@ -19,14 +18,13 @@ export default function WithdrawPage() {
 
   const load = async () => {
     try {
-      // const t = await tanksApi.getAll()
-      // setTanks(t.filter((tk) => tk.status !== 'EMPTY'))
-      // const f = await tanksApi.getFifoSuggest().catch(() => null)
-      // setFifo(f)
+      const t = await tanksApi.getAll()
+      setTanks(t.filter((tk) => tk.status !== 'EMPTY'))
+      const f = await tanksApi.getFifoSuggest().catch(() => null)
+      setFifo(f)
       const h = await ledgerApi.getAll({ eventType: 'WITHDRAW' })
       setHistory(h)
 
-      const t = await tanksApi.getAll()
       const active = t.filter((tk) => tk.status !== 'EMPTY')
       setTanks(active)
       setTotalAvailable(active.reduce((s, tk) => s + tk.currentWeightKg, 0))

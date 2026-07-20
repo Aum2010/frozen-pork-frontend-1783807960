@@ -8,7 +8,6 @@ export default function ThawPage() {
   const [pending, setPending] = useState<ThawEvent[]>([])
   const [lots, setLots] = useState<Lot[]>([])
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ lotId: '', weightKg: '' })
   const [submitting, setSubmitting] = useState(false)
   const [totalWeightKg, setTotalWeightKg] = useState('')
   const [preview, setPreview] = useState<{ lot: string; weightKg: number }[]>([])
@@ -42,21 +41,6 @@ export default function ThawPage() {
       remaining -= take
     }
     setPreview(result)
-  }
-
-  const handleStart = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitting(true)
-    try {
-      await thawApi.start(form.lotId, Number(form.weightKg))
-      toast.success('เริ่มละลายสำเร็จ')
-      setForm({ lotId: '', weightKg: '' })
-      load()
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'เกิดข้อผิดพลาด')
-    } finally {
-      setSubmitting(false)
-    }
   }
 
   const handleAutoThaw = async (e: React.FormEvent) => {

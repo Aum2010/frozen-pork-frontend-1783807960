@@ -62,14 +62,14 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {advisory?.expiry?.expiredCount > 0 && (
+      {advisory?.expiry?.expiredCount != null && advisory.expiry.expiredCount > 0 && (
         <div className="bg-red-50 border border-red-300 rounded-lg p-3 text-sm text-red-700">
-          ❌ มีหมูหมดอายุแล้ว {advisory.expiry.expiredCount} lot — ควรนำออกทันที
+          ❌ มีหมูหมดอายุแล้ว {advisory.expiry.expiredCount} lot
         </div>
       )}
-      {advisory?.expiry?.warningCount > 0 && (
+      {advisory?.expiry?.warningCount != null && advisory.expiry.warningCount > 0 && (
         <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 text-sm text-yellow-700">
-          ⚠️ หมูใกล้หมดอายุ {advisory.expiry.warningCount} lot (ภายใน 7 วัน)
+          ⚠️ หมูใกล้หมดอายุ {advisory.expiry.warningCount} lot
         </div>
       )}
 
@@ -126,10 +126,10 @@ function TankCard({ tank }: { tank: Tank }) {
 
       {lot?.expiryDate && (
         <p className={`text-xs mt-0.5 ${new Date(lot.expiryDate) < new Date()
-            ? 'text-red-500 font-medium'
-            : new Date(lot.expiryDate) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-              ? 'text-yellow-500'
-              : 'text-gray-400'
+          ? 'text-red-500 font-medium'
+          : new Date(lot.expiryDate) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            ? 'text-yellow-500'
+            : 'text-gray-400'
           }`}>
           หมดอายุ: {new Date(lot.expiryDate).toLocaleDateString('th-TH')}
         </p>
