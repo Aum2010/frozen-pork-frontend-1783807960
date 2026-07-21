@@ -5,49 +5,105 @@ import type { Tank, ThawEvent } from '../types'
 import { TankStatusBadge } from '../components/StatusBadge'
 import toast from 'react-hot-toast'
 
-function TankCard({ tank, onFill, hasWaiting }: {
+const getTimeInTank = (filledAt: string) => {
+  const diff = Date.now() - new Date(filledAt).getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+  if (days > 0) return `${days} วัน ${hours} ชม.`
+  if (hours > 0) return `${hours} ชม. ${minutes} นาที`
+  return `${minutes} นาที`
+}
+
+function TankCard({ tank, onFill, hasWaiting, maxDaysInTank, maxHoursInTank, maxMinutesInTank }: {
   tank: Tank
   onFill: () => void
   hasWaiting: boolean
+  maxDaysInTank: number
+  maxHoursInTank: number
+  maxMinutesInTank: number
 }) {
   const pct = (tank.currentWeightKg / tank.capacityKg) * 100
   const activeEntry = tank.tankEntries?.[0]
   const lot = activeEntry?.thawEvent?.lot
   const filledAt = activeEntry?.filledAt
 
+  const diffMs = filledAt ? Date.now() - new Date(filledAt).getTime() : 0
+  const thresholdMs = (maxDaysInTank * 24 * 60 + maxHoursInTank * 60 + maxMinutesInTank) * 60 * 1000
+  const isOverdue = filledAt && thresholdMs > 0 ? diffMs >= thresholdMs : false
+
+  // คำนวณจำนวนวันที่แช่ในถัง
+  // const daysInTank = filledAt
+  //   ? Math.floor((Date.now() - new Date(filledAt).getTime()) / (1000 * 60 * 60 * 24))
+  //   : null
+
+  // เช็คใกล้หมดอายุ
+  const isExpired = lot?.expiryDate && new Date(lot.expiryDate) < new Date()
+  const isExpiringSoon = lot?.expiryDate &&
+    new Date(lot.expiryDate) >= new Date() &&
+    new Date(lot.expiryDate) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+
   return (
-    <div className={`bg-white rounded-xl border-2 p-4 ${tank.isFifoNext ? 'border-orange-400' : 'border-gray-200'}`}>
-      <div className="flex items-center justify-between mb-2">
+    <div className={`bg-white rounded-xl border-2 p-4 ${isExpired ? 'border-red-400' :
+      isOverdue ? 'border-yellow-400' :
+        tank.isFifoNext ? 'border-orange-400' :
+          'border-gray-200'
+      }`}>
+      <div className="mb-2">
         <span className="font-bold text-gray-800">ถัง {tank.tankNumber}</span>
-        {tank.isFifoNext && (
-          <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-medium">
-            FIFO
-          </span>
-        )}
+        <div className="flex flex-wrap gap-1 mt-1">
+          {isExpired && (
+            <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">❌ หมดอายุ</span>
+          )}
+          {isExpiringSoon && (
+            <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">⚠️ ใกล้หมดอายุ</span>
+          )}
+          {isOverdue && !isExpired && (
+            <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">
+              {/* ⏰ แช่นานเกิน {maxDaysInTank} วัน */}
+              ⏰ แช่นานเกิน {maxMinutesInTank} นาที
+            </span>
+          )}
+          {tank.isFifoNext && !isExpired && !isOverdue && (
+            <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">FIFO</span>
+          )}
+        </div>
       </div>
 
       <TankStatusBadge status={tank.status} />
 
-      {/* Lot Number + วันที่ */}
-      {lot && (
-        <div className="mt-2 space-y-0.5">
-          <p className="text-xs font-medium text-gray-700">{lot.lotNumber}</p>
-          <p className="text-xs text-gray-400">
-            {lot.batchId}
-          </p>
+      {lot ? (
+        <div className="mt-2 space-y-1 border-t border-gray-100 pt-2">
+          <p className="text-xs font-semibold text-gray-800">{lot.lotNumber}</p>
           {filledAt && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-500">
               เข้าถัง: {new Date(filledAt).toLocaleString('th-TH')}
             </p>
           )}
+          {filledAt && (
+            <p className={`text-xs font-medium ${isOverdue ? 'text-yellow-600' : 'text-gray-500'}`}>
+              แช่มาแล้ว: {getTimeInTank(filledAt)}
+            </p>
+          )}
+          {lot.expiryDate && (
+            <p className={`text-xs font-medium ${isExpired ? 'text-red-600' : isExpiringSoon ? 'text-yellow-600' : 'text-gray-400'
+              }`}>
+              หมดอายุ: {new Date(lot.expiryDate).toLocaleDateString('th-TH')}
+            </p>
+          )}
         </div>
+      ) : (
+        tank.status === 'EMPTY' && (
+          <p className="text-xs text-gray-300 mt-2">ว่าง</p>
+        )
       )}
 
-      {/* Progress bar */}
       <div className="mt-2">
         <div className="w-full bg-gray-100 rounded-full h-2">
           <div
-            className="bg-blue-500 h-2 rounded-full transition-all"
+            className={`h-2 rounded-full transition-all ${isExpired ? 'bg-red-400' : isOverdue ? 'bg-yellow-400' : 'bg-blue-500'
+              }`}
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -73,6 +129,9 @@ export default function TankDashboardPage() {
   const [waitingThaws, setWaitingThaws] = useState<ThawEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [fillForm, setFillForm] = useState<{ tankId: string; thawEventId: string; weightKg: string } | null>(null)
+  const [maxDaysInTank ] = useState(0)
+  const [maxHoursInTank ] = useState(0)
+  const [maxMinutesInTank ] = useState(30) // default 30 นาที
 
   const load = async () => {
     try {
@@ -132,6 +191,9 @@ export default function TankDashboardPage() {
             key={tank.id}
             tank={tank}
             hasWaiting={waitingThaws.length > 0}
+            maxDaysInTank={maxDaysInTank}
+            maxHoursInTank={maxHoursInTank}
+            maxMinutesInTank={maxMinutesInTank}
             onFill={() => setFillForm({ tankId: tank.id, thawEventId: '', weightKg: '' })}
           />
         ))}
